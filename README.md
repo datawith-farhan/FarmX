@@ -9,6 +9,10 @@ The repository includes two execution paths:
 
 > **Status:** This project interacts with a live game through an emulator. Screen layouts, game updates, emulator settings, and connection ports can affect its behavior. Review the code and test carefully before running it on an account you care about.
 
+## FarmX - Working Demo
+
+https://github.com/user-attachments/assets/c1025f33-21a8-44d2-b1a5-aaa724707a47
+
 ## Features
 
 Implemented in the source code:
