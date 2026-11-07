@@ -1,0 +1,106 @@
+{
+  "_comment": "Tuning for farm_plus.py. app.py and config.json are untouched; this file only holds the values farm_plus adds. Verify on your own emulator with: python farm_plus.py --selftest",
+  "points": {
+    "_comment": "Tap targets on the home screen. Only used by --setup's verification now; storage capacity is no longer read from the screen (it was unreliable - the tap often failed to open the tooltip and the read landed on the resource bar underneath, returning the CURRENT amount as the maximum). Capacities come from config.json, asked at startup.",
+    "gold_coin": [
+      1469,
+      54
+    ],
+    "elixir_coin": [
+      1497,
+      141
+    ]
+  },
+  "roi": {
+    "_comment": "Fractions of screen size, so they survive a resolution change. The old absolute pixel boxes in app.py (HOME_GOLD_ROI / HOME_ELIXIR_ROI) clipped the digits vertically and returned None on every reference frame.",
+    "gold_bar": [
+      0.775,
+      0.03,
+      0.945,
+      0.11
+    ],
+    "elixir_bar": [
+      0.775,
+      0.125,
+      0.945,
+      0.205
+    ],
+    "_home_anchor_note": "Bottom-left corner where the Attack button lives. Restricting the search there is what makes the lower home_anchor threshold safe - nothing else on screen can out-score it.",
+    "home_anchor": [
+      0.0,
+      0.55,
+      0.45,
+      1.0
+    ],
+    "_end_battle_note": "Bottom-left corner where the red End Battle / Surrender button sits during a raid.",
+    "end_battle": [
+      0.0,
+      0.6,
+      0.3,
+      0.85
+    ],
+    "_enemy_gold_comment": "Deliberately absent. Enemy loot is read by app.py's own read_gold with its own GOLD_ROI - the V7 method, which works. Custom ROIs and the isolate_run gap test were tried here and both broke it: isolate_run splits at the widest gap, which on a loot line is between the digit GROUPS of '2 009 207', so it kept only '207'."
+  },
+  "thresholds": {
+    "template": 0.8,
+    "_home_anchor_comment": "The Attack button pulses and its stars animate: genuine home screens score 0.78-0.85 against the templates, non-home screens ~0.30. A shared 0.80 cut sits inside the positive range and rejects real home screens. 0.62 sits in the empty middle.",
+    "home_anchor": 0.62,
+    "end_battle": 0.7,
+    "_battle_okay_comment": "The green Okay on the Surrender? / End Battle? dialog. 0.99 on both dialogs, 0.51 or less on a battle in progress. Note CoC's quit dialog uses the same button and scores 0.96 - harmless here because this is only checked in the seconds after tapping End Battle.",
+    "battle_okay": 0.85,
+    "_close_x_comment": "Deliberately below template: the red X is confirmed by a red blob at the same spot, so the template only needs to locate it.",
+    "close_x": 0.62,
+    "_reward_wood_comment": "Measured across all 18 references: the reward tap stage is 0.65, and the next highest thing on the list is the Gold Pass popup at 0.40, with battle frames at 0.37-0.39. A 0.40 cut therefore sits ON a false positive - it would fire the reward handler on the Gold Pass popup and tap the screen centre eight times. 0.52 sits in the empty middle.",
+    "reward_wood": 0.52
+  },
+  "battle": {
+    "max_seconds": 20,
+    "_comment": "A CoC attack runs the full 3 minutes regardless. Once the army is down the loot is already banked, so the rest is dead time. At this deadline the bot taps End Battle (or Surrender, which is what CoC shows below 30% damage) and confirms the dialog. Raise it if raids are being cut while troops are still alive.",
+    "_disable": "set to 0 or a number above 180 to let every battle run to the end"
+  },
+  "resources": {
+    "_comment": "The gold/elixir read taken before each wall check and again after each raid. Retried rather than trusted once: the numbers tick up while storages collect, and the bar animates after a raid pays out, so a single grab can land mid-animation.",
+    "retries": 3,
+    "retry_delay": 1.0,
+    "read_after_raid": true,
+    "loot_read_retries": 3,
+    "loot_settle_timeout": 4.0,
+    "_loot_settle_comment": "Seconds to wait for the scout screen to stop animating before reading the loot. The base slides in after a Next tap and the numbers move with it; reading mid-slide gives an empty string (which app.py turned into a gold value of 0, skipping a base that may have been fine) or half-overlapped digits that merge into one impossible number.",
+    "_loot_comment": "There is no upper sanity limit on enemy loot: the only test is your min_gold from config.json. A ceiling was tried and removed because it could not distinguish a merged reading from a genuinely rich base - 2.5M gold on one base is normal, so any ceiling low enough to catch merged digits also rejected the best bases.",
+    "next_btn_timeout": 15
+  },
+  "wall": {
+    "trigger_pct": 0.9,
+    "_comment": "Storage fraction at which a wall-drain session starts. EITHER gold or elixir crossing it starts one, and once started BOTH are spent - a wall level costs the same in gold or elixir, and since the two storages are rarely the same size, one always reaches 90% well before the other. Draining only the one that tripped leaves the other filling toward an overflow it reaches shortly after.",
+    "min_spend_pct": 0.0,
+    "confirm_threshold": 0.75,
+    "confirm_timeout": 10,
+    "recheck_maxed_after": 6,
+    "_recheck_comment": "How many sessions a point stays on the skip list after its Upgrade button did not appear. Not permanent on purpose: a Town Hall upgrade raises the wall cap and every maxed wall becomes upgradeable again the same day, so the marks expire and the whole ring is re-checked.",
+    "reset_progress": false,
+    "_reset_comment": "Set true for one run to wipe wall_progress.json - the resume cursor and the maxed list - then set it back. You should not normally need this: the pinned wall list is fingerprinted, so re-pinning is detected and the rotation restarts on its own. This is the manual override for when you want a clean slate anyway.",
+    "_dialog_comment": "CoC has two different wall-upgrade confirm dialogs. app.py only knew confirm_upgrade_btn.png; the other is the 'Upgrade Walls ... for N Elixir?' panel with Cancel and Okay. It is modal, so when it went unrecognised it stayed up and every later wall tap hit it instead of the village - two upgrades, then 'Timed out waiting for [Confirm upgrade]' forever. Both are matched now, and the dialog is always cleared before moving on. max_consecutive_no_button ends a session early on a village where nothing is upgradeable, rather than tapping all 42 points for nothing.",
+    "upgrade_on_misread": true,
+    "_upgrade_on_misread_comment": "When a storage reading cannot be trusted - unreadable, or a value above what the storage can physically hold - run a wall session anyway instead of skipping. The two mistakes are not symmetrical: a wrongly-triggered drain costs one wall tap, because app.py's session returns on the first 'you need more X' popup, while a wrongly-skipped drain costs the whole overflow until a round happens to read cleanly. Set false to skip instead.",
+    "_min_spend_comment": "Skip spending a resource sitting below this fraction. 0 means always spend both. Raising it (say 0.25) skips a near-empty resource, though the cost of not doing so is small: app.py's session stops on the first 'you need more X' popup, so an empty resource costs one wall tap rather than a full pass.",
+    "require_home": true,
+    "_require_home_comment": "Wall points are absolute map coordinates. Tapping them while a popup is up fires 40+ blind taps at whatever is on screen, so the session refuses to start unless the Attack button is visible."
+  },
+  "limits": {
+    "home_retries": 6,
+    "max_consecutive_raid_failures": 8
+  },
+  "delays": {
+    "after_tap": 1.2,
+    "confirm_poll": 1.5
+  },
+  "ocr": {
+    "gold_threshold": 235,
+    "cost_sat_max": 90,
+    "cost_val_min": 225,
+    "min_agree": 2,
+    "_min_agree_comment": "How many independent readings of the same glyphs must produce the same number before it is accepted. The glyphs are read at three brightness cuts, with three spacings, and once character-by-character. 1 accepts the first reading (old behaviour, and how wrong values got through). 2 is the default. 3 is stricter and will return 'unreadable' more often - which is safe, since every caller skips rather than guesses.",
+    "_comment": "gold_threshold: grayscale cut for the top-bar resource numbers. cost_sat_max/cost_val_min: isolates the white digits in the capacity tooltip, excluding the gold coin and elixir orb beside them.",
+    "_loot_threshold_comment": "Grayscale cut for the enemy loot numbers on the scout screen. Lower than the home bars because that panel is darker."
+  }
+}

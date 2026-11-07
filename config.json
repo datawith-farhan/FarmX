@@ -1,0 +1,21 @@
+{
+  "num_troop_slots": 1,
+  "troop_counts": [
+    17
+  ],
+  "num_troops_total": 17,
+  "num_heroes": 5,
+  "num_spell_slots": 1,
+  "spell_counts": [
+    5
+  ],
+  "spell_delays": [
+    1
+  ],
+  "num_spells": 5,
+  "min_gold": 700000,
+  "setup_complete": true,
+  "auto_wall_upgrade": false,
+  "gold_capacity": 0,
+  "elixir_capacity": 0
+}
